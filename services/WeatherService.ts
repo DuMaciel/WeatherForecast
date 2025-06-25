@@ -1,4 +1,4 @@
-import { City, WeatherData } from "../types/weather";
+import { Location, WeatherData } from "../types/weather";
 
 const NOMINATIM_BASE_URL = "https://nominatim.openstreetmap.org/search";
 const OPEN_METEO_BASE_URL = "https://api.open-meteo.com/v1/forecast";
@@ -19,7 +19,7 @@ export class WeatherService {
     this.lastRequestTime = Date.now();
   }
 
-  static async searchCities(query: string): Promise<City[]> {
+  static async searchLocations(query: string): Promise<Location[]> {
     await this.waitForRateLimit();
 
     try {
@@ -38,27 +38,42 @@ export class WeatherService {
 
       if (!response.ok) {
         console.error(
-          "Erro ao buscar cidades:",
+          "Erro ao buscar localidades:",
           response.status,
           response.statusText
         );
-        throw new Error("Erro ao buscar cidades");
+        throw new Error("Erro ao buscar localidades");
       }
 
       const data = await response.json();
 
-      const cities = data.map((item: any) => ({
-        id: item.place_id.toString(),
-        name: item.display_name.split(",")[0],
-        country: item.address?.country || "N/A",
-        lat: parseFloat(item.lat),
-        lon: parseFloat(item.lon),
-        display_name: item.display_name,
-      }));
+      const locations = data.map((item: any) => {
+        const address = item.address || {};
+        
+        // Extrai o nome principal (pode ser cidade, bairro, distrito, etc.)
+        const name = item.display_name.split(",")[0].trim();
+        
+        // Extrai informações hierárquicas
+        const city = address.city || address.town || address.village || address.municipality;
+        const state = address.state || address.region || address.province;
+        const country = address.country;
+        
+        return {
+          id: item.place_id.toString(),
+          name,
+          city: city !== name ? city : undefined, // Só inclui se for diferente do name
+          state,
+          country: country || "N/A",
+          lat: parseFloat(item.lat),
+          lon: parseFloat(item.lon),
+          display_name: item.display_name,
+          type: item.type || address.type || "location",
+        };
+      });
 
-      return cities;
+      return locations;
     } catch (error) {
-      console.error("Erro ao buscar cidades:", error);
+      console.error("Erro ao buscar localidades:", error);
       throw error;
     }
   }
@@ -158,8 +173,62 @@ export class WeatherService {
     return isNight ? "🌃" : "🌤️";
   }
 
-  static clearCache(): void {
-    // Se houver cache implementado no futuro, limpar aqui
-    console.log("Cache limpo (funcionalidade futura)");
+  static formatLocationName(location: Location, includeCountry: boolean = true): string {
+    let parts: string[] = [];
+    
+    // Adiciona o nome principal
+    parts.push(location.name);
+    
+    // Se tem cidade e é diferente do nome principal, adiciona
+    if (location.city && location.city !== location.name) {
+      parts.push(location.city);
+    }
+    
+    // Adiciona estado se disponível
+    if (location.state) {
+      parts.push(location.state);
+    }
+    
+    // Adiciona país se solicitado
+    if (includeCountry && location.country) {
+      parts.push(location.country);
+    }
+    
+    return parts.join(", ");
+  }
+
+  static getLocationDisplayName(location: Location): string {
+    return this.formatLocationName(location, true);
+  }
+
+  static getLocationShortName(location: Location): string {
+    return this.formatLocationName(location, false);
+  }
+
+  static async clearCache(): Promise<void> {
+    // Remove os timestamps de atualização de todas as localidades favoritas
+    // forçando uma nova atualização na próxima consulta
+    const { FavoritesService } = await import('./FavoritesService');
+    
+    try {
+      const favorites = await FavoritesService.getFavorites();
+      
+      for (const favorite of favorites) {
+        const updatedFavorite = {
+          ...favorite,
+          lastUpdated: undefined, // Remove o timestamp
+          weatherData: undefined, // Remove dados cache
+        };
+        
+        // Remove e adiciona novamente para limpar o cache
+        await FavoritesService.removeFavorite(favorite.id);
+        await FavoritesService.addFavorite(updatedFavorite);
+      }
+      
+      console.log("Cache de dados meteorológicos limpo com sucesso");
+    } catch (error) {
+      console.error("Erro ao limpar cache:", error);
+      throw error;
+    }
   }
 }

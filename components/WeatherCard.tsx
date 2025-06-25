@@ -1,14 +1,14 @@
 import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
-import { WeatherData, FavoriteCity } from "../types/weather";
+import { WeatherData, FavoriteLocation } from "../types/weather";
 import { WeatherService } from "../services/WeatherService";
 import { FavoritesService } from "../services/FavoritesService";
 
 interface WeatherCardProps {
-  city: FavoriteCity;
+  city: FavoriteLocation;
   onPress?: () => void;
-  onToggleFavorite?: (city: FavoriteCity) => void;
-  onRefresh?: (city: FavoriteCity) => void;
+  onToggleFavorite?: (city: FavoriteLocation) => void;
+  onRefresh?: (city: FavoriteLocation) => void;
   isFavorite?: boolean;
 }
 
@@ -25,7 +25,9 @@ export const WeatherCard: React.FC<WeatherCardProps> = ({
     return (
       <TouchableOpacity style={styles.card} onPress={onPress}>
         <View style={styles.cardContent}>
-          <Text style={styles.cityName}>{city.name}</Text>
+          <Text style={styles.cityName}>
+            {WeatherService.getLocationShortName(city)}
+          </Text>
           <Text style={styles.country}>{city.country}</Text>
           <Text style={styles.loading}>Carregando dados...</Text>
         </View>
@@ -43,22 +45,28 @@ export const WeatherCard: React.FC<WeatherCardProps> = ({
   const weatherDesc = WeatherService.getWeatherDescription(
     weatherData.current.weather_code
   );
-  
+
   const lastUpdatedText = FavoritesService.getLastUpdatedText(city.lastUpdated);
-  const canRefresh = city.lastUpdated ? 
-    (new Date().getTime() - new Date(city.lastUpdated).getTime()) / (1000 * 60) >= 5 : 
-    true;
+  const canRefresh = city.lastUpdated
+    ? (new Date().getTime() - new Date(city.lastUpdated).getTime()) /
+        (1000 * 60) >=
+      5
+    : true;
 
   return (
     <TouchableOpacity style={styles.card} onPress={onPress}>
       <View style={styles.cardContent}>
         <View style={styles.header}>
           <View>
-            <Text style={styles.cityName}>{city.name}</Text>
+            <Text style={styles.cityName}>
+              {WeatherService.getLocationShortName(city)}
+            </Text>
             <Text style={styles.country}>{city.country}</Text>
             <View style={styles.updateInfo}>
               <View style={styles.updateRow}>
-                <Text style={styles.lastUpdated}>Atualizado: {lastUpdatedText}</Text>
+                <Text style={styles.lastUpdated}>
+                  Atualizado: {lastUpdatedText}
+                </Text>
                 {onRefresh && canRefresh && (
                   <TouchableOpacity
                     onPress={() => onRefresh(city)}
@@ -69,7 +77,9 @@ export const WeatherCard: React.FC<WeatherCardProps> = ({
                 )}
               </View>
               {canRefresh && (
-                <Text style={styles.canUpdateText}>• Atualização disponível</Text>
+                <Text style={styles.canUpdateText}>
+                  • Atualização disponível
+                </Text>
               )}
             </View>
           </View>
@@ -84,11 +94,13 @@ export const WeatherCard: React.FC<WeatherCardProps> = ({
         </View>
 
         <View style={styles.weatherInfo}>
-          <Text style={styles.weatherIcon}>{weatherIcon}</Text>
-          <Text style={styles.temperature}>{currentTemp}°C</Text>
-        </View>
+          <View style={styles.weatherIconWithTemp}>
+            <Text style={styles.weatherIcon}>{weatherIcon}</Text>
+            <Text style={styles.temperature}>{currentTemp}°C</Text>
+          </View>
 
-        <Text style={styles.weatherDescription}>{weatherDesc}</Text>
+          <Text style={styles.weatherDescription}>{weatherDesc}</Text>
+        </View>
 
         <View style={styles.details}>
           <View style={styles.detailItem}>
@@ -179,9 +191,14 @@ const styles = StyleSheet.create({
     color: "#2196F3",
   },
   weatherInfo: {
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  weatherIconWithTemp: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 8,
   },
   weatherIcon: {
     fontSize: 32,

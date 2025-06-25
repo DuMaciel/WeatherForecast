@@ -1,10 +1,10 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { FavoriteCity } from "../types/weather";
+import { FavoriteLocation } from "../types/weather";
 
-const FAVORITES_KEY = "favorite_cities";
+const FAVORITES_KEY = "favorite_locations";
 
 export class FavoritesService {
-  static async getFavorites(): Promise<FavoriteCity[]> {
+  static async getFavorites(): Promise<FavoriteLocation[]> {
     try {
       const favorites = await AsyncStorage.getItem(FAVORITES_KEY);
       return favorites ? JSON.parse(favorites) : [];
@@ -14,13 +14,13 @@ export class FavoritesService {
     }
   }
 
-  static async addFavorite(city: FavoriteCity): Promise<void> {
+  static async addFavorite(location: FavoriteLocation): Promise<void> {
     try {
       const favorites = await this.getFavorites();
-      const exists = favorites.find((fav) => fav.id === city.id);
+      const exists = favorites.find((fav) => fav.id === location.id);
 
       if (!exists) {
-        favorites.push(city);
+        favorites.push(location);
         await AsyncStorage.setItem(FAVORITES_KEY, JSON.stringify(favorites));
       }
     } catch (error) {
@@ -29,10 +29,10 @@ export class FavoritesService {
     }
   }
 
-  static async removeFavorite(cityId: string): Promise<void> {
+  static async removeFavorite(locationId: string): Promise<void> {
     try {
       const favorites = await this.getFavorites();
-      const filteredFavorites = favorites.filter((fav) => fav.id !== cityId);
+      const filteredFavorites = favorites.filter((fav) => fav.id !== locationId);
       await AsyncStorage.setItem(
         FAVORITES_KEY,
         JSON.stringify(filteredFavorites)
@@ -43,24 +43,24 @@ export class FavoritesService {
     }
   }
 
-  static async isFavorite(cityId: string): Promise<boolean> {
+  static async isFavorite(locationId: string): Promise<boolean> {
     try {
       const favorites = await this.getFavorites();
-      return favorites.some((fav) => fav.id === cityId);
+      return favorites.some((fav) => fav.id === locationId);
     } catch (error) {
       console.error("Erro ao verificar favorito:", error);
       return false;
     }
   }
 
-  static async updateWeatherData(cityId: string, weatherData: any): Promise<void> {
+  static async updateWeatherData(locationId: string, weatherData: any): Promise<void> {
     try {
       const favorites = await this.getFavorites();
-      const cityIndex = favorites.findIndex((fav) => fav.id === cityId);
+      const locationIndex = favorites.findIndex((fav) => fav.id === locationId);
       
-      if (cityIndex !== -1) {
-        favorites[cityIndex].weatherData = weatherData;
-        favorites[cityIndex].lastUpdated = new Date().toISOString();
+      if (locationIndex !== -1) {
+        favorites[locationIndex].weatherData = weatherData;
+        favorites[locationIndex].lastUpdated = new Date().toISOString();
         await AsyncStorage.setItem(FAVORITES_KEY, JSON.stringify(favorites));
       }
     } catch (error) {
@@ -69,16 +69,16 @@ export class FavoritesService {
     }
   }
 
-  static async needsUpdate(cityId: string): Promise<boolean> {
+  static async needsUpdate(locationId: string): Promise<boolean> {
     try {
       const favorites = await this.getFavorites();
-      const city = favorites.find((fav) => fav.id === cityId);
+      const location = favorites.find((fav) => fav.id === locationId);
       
-      if (!city || !city.lastUpdated) {
+      if (!location || !location.lastUpdated) {
         return true; // Nunca foi atualizado
       }
       
-      const lastUpdated = new Date(city.lastUpdated);
+      const lastUpdated = new Date(location.lastUpdated);
       const now = new Date();
       const diffMinutes = (now.getTime() - lastUpdated.getTime()) / (1000 * 60);
       

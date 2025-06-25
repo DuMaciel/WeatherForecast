@@ -8,14 +8,14 @@ import {
   FlatList,
   Alert,
 } from 'react-native';
-import { WeatherData, FavoriteCity } from '../types/weather';
+import { WeatherData, FavoriteLocation } from '../types/weather';
 import { WeatherService } from '../services/WeatherService';
 import { FavoritesService } from '../services/FavoritesService';
 
 interface WeatherDetailProps {
-  city: FavoriteCity;
+  city: FavoriteLocation;
   onBack: () => void;
-  onRefresh?: (city: FavoriteCity) => void;
+  onRefresh?: (city: FavoriteLocation) => void;
 }
 
 export const WeatherDetail: React.FC<WeatherDetailProps> = ({
@@ -32,7 +32,7 @@ export const WeatherDetail: React.FC<WeatherDetailProps> = ({
           <TouchableOpacity onPress={onBack} style={styles.backButton}>
             <Text style={styles.backButtonText}>← Voltar</Text>
           </TouchableOpacity>
-          <Text style={styles.cityName}>{city.name}</Text>
+          <Text style={styles.cityName}>{WeatherService.getLocationDisplayName(city)}</Text>
         </View>
         <View style={styles.loadingContainer}>
           <Text style={styles.loadingText}>
@@ -148,7 +148,7 @@ export const WeatherDetail: React.FC<WeatherDetailProps> = ({
           <Text style={styles.backButtonText}>← Voltar</Text>
         </TouchableOpacity>
         <View style={styles.headerInfo}>
-          <Text style={styles.cityName}>{city.name}</Text>
+          <Text style={styles.cityName}>{WeatherService.getLocationDisplayName(city)}</Text>
           <View style={styles.updateRow}>
             <Text style={styles.lastUpdatedHeader}>Atualizado: {lastUpdatedText}</Text>
             {onRefresh && canRefresh && (

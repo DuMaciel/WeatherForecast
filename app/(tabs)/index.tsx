@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { useFocusEffect } from "@react-navigation/native";
 import {
   StyleSheet,
   View,
@@ -14,14 +15,14 @@ import { CitySearch } from "@/components/CitySearch";
 import { WeatherDetail } from "@/components/WeatherDetail";
 import { FavoritesService } from "@/services/FavoritesService";
 import { WeatherService } from "@/services/WeatherService";
-import { FavoriteCity, City } from "@/types/weather";
+import { FavoriteLocation, Location } from "@/types/weather";
 import { useCurrentTime } from "@/hooks/useCurrentTime";
 
 export default function WeatherApp() {
-  const [favorites, setFavorites] = useState<FavoriteCity[]>([]);
+  const [favorites, setFavorites] = useState<FavoriteLocation[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
-  const [selectedCity, setSelectedCity] = useState<FavoriteCity | null>(null);
+  const [selectedCity, setSelectedCity] = useState<FavoriteLocation | null>(null);
   const currentTime = useCurrentTime(30000); // Atualiza a cada 30 segundos
 
   const loadFavorites = useCallback(async () => {
@@ -34,7 +35,7 @@ export default function WeatherApp() {
     }
   }, []);
 
-  const loadWeatherData = async (cities: FavoriteCity[], forceUpdate = false) => {
+  const loadWeatherData = async (cities: FavoriteLocation[], forceUpdate = false) => {
     const updatedCities = await Promise.all(
       cities.map(async (city) => {
         try {
@@ -73,7 +74,7 @@ export default function WeatherApp() {
     
     let updatedCount = 0;
     
-    // Atualiza apenas as cidades que podem ser atualizadas (5 minutos)
+    // Atualiza apenas as localidades que podem ser atualizadas (5 minutos)
     const updatedCities = await Promise.all(
       favoriteCities.map(async (city) => {
         try {
@@ -102,43 +103,43 @@ export default function WeatherApp() {
     setFavorites(updatedCities);
     setIsLoading(false);
     
-    // Mostra feedback sobre quantas cidades foram atualizadas
+    // Mostra feedback sobre quantas localidades foram atualizadas
     if (updatedCount === 0) {
       Alert.alert(
         "Nenhuma atualização necessária", 
-        "Todas as cidades foram atualizadas recentemente. Aguarde 5 minutos para uma nova atualização."
+        "Todas as localidades foram atualizadas recentemente. Aguarde 5 minutos para uma nova atualização."
       );
     } else {
       Alert.alert(
         "Atualização concluída", 
-        `${updatedCount} cidade(s) ${updatedCount === 1 ? 'foi atualizada' : 'foram atualizadas'}.`
+        `${updatedCount} localidade(s) ${updatedCount === 1 ? 'foi atualizada' : 'foram atualizadas'}.`
       );
     }
   }, []);
 
-  const handleCitySelect = async (city: City) => {
+  const handleLocationSelect = async (location: Location) => {
     try {
       const weatherData = await WeatherService.getWeatherData(
-        city.lat,
-        city.lon
+        location.lat,
+        location.lon
       );
-      const favoriteCity: FavoriteCity = { 
-        ...city, 
+      const favoriteLocation: FavoriteLocation = { 
+        ...location, 
         weatherData,
         lastUpdated: new Date().toISOString()
       };
 
-      await FavoritesService.addFavorite(favoriteCity);
+      await FavoritesService.addFavorite(favoriteLocation);
       setShowSearch(false);
       await loadFavorites();
 
-      Alert.alert("Sucesso", `${city.name} foi adicionada aos favoritos!`);
+      Alert.alert("Sucesso", `${location.name} foi adicionada aos favoritos!`);
     } catch (error) {
-      Alert.alert("Erro", "Não foi possível adicionar a cidade aos favoritos.");
+      Alert.alert("Erro", "Não foi possível adicionar a localidade aos favoritos.");
     }
   };
 
-  const handleToggleFavorite = async (city: FavoriteCity) => {
+  const handleToggleFavorite = async (city: FavoriteLocation) => {
     try {
       const isFav = await FavoritesService.isFavorite(city.id);
 
@@ -156,11 +157,11 @@ export default function WeatherApp() {
     }
   };
 
-  const handleCityPress = (city: FavoriteCity) => {
+  const handleCityPress = (city: FavoriteLocation) => {
     setSelectedCity(city);
   };
 
-  const handleRefreshCity = async (city: FavoriteCity) => {
+  const handleRefreshCity = async (city: FavoriteLocation) => {
     try {
       const weatherData = await WeatherService.getWeatherData(city.lat, city.lon);
       await FavoritesService.updateWeatherData(city.id, weatherData);
@@ -180,7 +181,14 @@ export default function WeatherApp() {
     loadFavorites();
   }, [loadFavorites]);
 
-  const renderFavoriteCity = ({ item }: { item: FavoriteCity }) => (
+  // Recarrega favoritos sempre que a tela ganhar foco (ex: ao voltar da tela de configurações)
+  useFocusEffect(
+    useCallback(() => {
+      loadFavorites();
+    }, [loadFavorites])
+  );
+
+  const renderFavoriteLocation = ({ item }: { item: FavoriteLocation }) => (
     <WeatherCard
       city={item}
       onPress={() => handleCityPress(item)}
@@ -208,27 +216,27 @@ export default function WeatherApp() {
           style={styles.addButton}
           onPress={() => setShowSearch(true)}
         >
-          <Text style={styles.addButtonText}>+ Adicionar Cidade</Text>
+          <Text style={styles.addButtonText}>+ Adicionar Localidade</Text>
         </TouchableOpacity>
       </View>
 
       {favorites.length === 0 ? (
         <View style={styles.emptyState}>
-          <Text style={styles.emptyTitle}>Nenhuma cidade salva</Text>
+          <Text style={styles.emptyTitle}>Nenhuma localidade salva</Text>
           <Text style={styles.emptyMessage}>
-            Adicione suas cidades favoritas para ver a previsão do tempo
+            Adicione suas localidades favoritas para ver a previsão do tempo
           </Text>
           <TouchableOpacity
             style={styles.emptyButton}
             onPress={() => setShowSearch(true)}
           >
-            <Text style={styles.emptyButtonText}>Buscar Cidades</Text>
+            <Text style={styles.emptyButtonText}>Buscar Localidades</Text>
           </TouchableOpacity>
         </View>
       ) : (
         <FlatList
           data={favorites}
-          renderItem={renderFavoriteCity}
+          renderItem={renderFavoriteLocation}
           keyExtractor={(item) => `${item.id}-${item.lastUpdated || 'no-update'}`}
           contentContainerStyle={styles.listContainer}
           refreshControl={
@@ -249,7 +257,7 @@ export default function WeatherApp() {
         onRequestClose={() => setShowSearch(false)}
       >
         <CitySearch
-          onCitySelect={handleCitySelect}
+          onLocationSelect={handleLocationSelect}
           onClose={() => setShowSearch(false)}
         />
       </Modal>

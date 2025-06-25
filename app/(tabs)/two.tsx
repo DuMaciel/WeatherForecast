@@ -7,7 +7,7 @@ export default function SettingsScreen() {
   const handleClearFavorites = () => {
     Alert.alert(
       "Limpar Favoritos",
-      "Tem certeza de que deseja remover todas as cidades favoritas?",
+      "Tem certeza de que deseja remover todas as localidades favoritas?",
       [
         {
           text: "Cancelar",
@@ -24,7 +24,7 @@ export default function SettingsScreen() {
               }
               Alert.alert(
                 "Sucesso",
-                "Todas as cidades favoritas foram removidas."
+                "Todas as localidades favoritas foram removidas."
               );
             } catch (error) {
               Alert.alert("Erro", "Não foi possível limpar os favoritos.");
@@ -49,9 +49,7 @@ export default function SettingsScreen() {
           style: "destructive",
           onPress: async () => {
             try {
-              if (WeatherService.clearCache) {
-                WeatherService.clearCache();
-              }
+              await WeatherService.clearCache();
               Alert.alert("Sucesso", "Cache limpo com sucesso.");
             } catch (error) {
               Alert.alert("Erro", "Não foi possível limpar o cache.");
@@ -76,9 +74,9 @@ export default function SettingsScreen() {
             style={styles.settingItem}
             onPress={handleClearFavorites}
           >
-            <Text style={styles.settingText}>Limpar Cidades Favoritas</Text>
+            <Text style={styles.settingText}>Limpar Localidades Favoritas</Text>
             <Text style={styles.settingDescription}>
-              Remove todas as cidades salvas
+              Remove todas as localidades salvas
             </Text>
           </TouchableOpacity>
 

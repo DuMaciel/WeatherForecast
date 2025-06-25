@@ -1,10 +1,13 @@
-export interface City {
+export interface Location {
   id: string;
-  name: string;
-  country: string;
+  name: string; // Nome da localidade (pode ser cidade, bairro, distrito, etc.)
+  city?: string; // Cidade (se a localidade não for uma cidade)
+  state?: string; // Estado/região
+  country: string; // País
   lat: number;
   lon: number;
-  display_name: string;
+  display_name: string; // Nome completo original do Nominatim
+  type?: string; // Tipo da localidade (city, suburb, village, etc.)
 }
 
 export interface WeatherData {
@@ -33,7 +36,7 @@ export interface WeatherData {
   };
 }
 
-export interface FavoriteCity extends City {
+export interface FavoriteLocation extends Location {
   weatherData?: WeatherData;
   lastUpdated?: string; // ISO timestamp da última atualização
 }

@@ -9,20 +9,20 @@ import {
   ActivityIndicator,
   Alert,
 } from "react-native";
-import { City } from "../types/weather";
+import { Location } from "../types/weather";
 import { WeatherService } from "../services/WeatherService";
 
-interface CitySearchProps {
-  onCitySelect: (city: City) => void;
+interface LocationSearchProps {
+  onLocationSelect: (location: Location) => void;
   onClose: () => void;
 }
 
-export const CitySearch: React.FC<CitySearchProps> = ({
-  onCitySelect,
+export const CitySearch: React.FC<LocationSearchProps> = ({
+  onLocationSelect,
   onClose,
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<City[]>([]);
+  const [searchResults, setSearchResults] = useState<Location[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSearch = async () => {
@@ -33,7 +33,7 @@ export const CitySearch: React.FC<CitySearchProps> = ({
 
     setIsLoading(true);
     try {
-      const results = await WeatherService.searchCities(searchQuery.trim());
+      const results = await WeatherService.searchLocations(searchQuery.trim());
       setSearchResults(results);
     } catch (error) {
       Alert.alert(
@@ -45,26 +45,28 @@ export const CitySearch: React.FC<CitySearchProps> = ({
     }
   };
 
-  const handleCitySelect = (city: City) => {
-    onCitySelect(city);
+  const handleCitySelect = (city: Location) => {
+    onLocationSelect(city);
     setSearchQuery("");
     setSearchResults([]);
   };
 
-  const renderCityItem = ({ item }: { item: City }) => (
+  const renderCityItem = ({ item }: { item: Location }) => (
     <TouchableOpacity
       style={styles.cityItem}
       onPress={() => handleCitySelect(item)}
     >
       <Text style={styles.cityName}>{item.name}</Text>
-      <Text style={styles.cityDetails}>{item.display_name}</Text>
+      <Text style={styles.cityDetails}>
+        {WeatherService.getLocationDisplayName(item)}
+      </Text>
     </TouchableOpacity>
   );
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Buscar Cidade</Text>
+        <Text style={styles.title}>Buscar Localidade</Text>
         <TouchableOpacity onPress={onClose} style={styles.closeButton}>
           <Text style={styles.closeButtonText}>✕</Text>
         </TouchableOpacity>
@@ -73,7 +75,7 @@ export const CitySearch: React.FC<CitySearchProps> = ({
       <View style={styles.searchContainer}>
         <TextInput
           style={styles.searchInput}
-          placeholder="Digite o nome da cidade..."
+          placeholder="Digite o nome da localidade..."
           value={searchQuery}
           onChangeText={setSearchQuery}
           onSubmitEditing={handleSearch}

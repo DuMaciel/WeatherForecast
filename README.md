@@ -1,13 +1,16 @@
 # Weather Forecast App 🌤️
 
-Um aplicativo React Native de previsão do tempo que permite buscar cidades e salvá-las como favoritas para fácil acesso aos dados meteorológicos.
+Um aplicativo React Native de previsão do tempo que permite buscar localidades (cidades, bairros, distritos) e salvá-las como favoritas para fácil acesso aos dados meteorológicos.
 
 ## 📱 Funcionalidades
 
-- **Busca de Cidades**: Pesquise cidades ao redor do mundo usando a API do OpenStreetMap Nominatim
-- **Favoritos**: Salve suas cidades favoritas localmente para acesso rápido
+- **Busca de Localidades**: Pesquise localidades ao redor do mundo usando a API do OpenStreetMap Nominatim
+  - Busque por cidades, bairros, distritos e outras localidades
+  - Exibição hierárquica: localidade, cidade, estado, país
+  - Formatação inteligente dos nomes das localidades
+- **Favoritos**: Salve suas localidades favoritas localmente para acesso rápido
 - **Controle de Atualização**: 
-  - Timestamp da última atualização visível em cada cidade
+  - Timestamp da última atualização visível em cada localidade
   - Atualização individual disponível após 5 minutos
   - Botão de atualização aparece quando disponível
   - Atualização forçada via "puxar para baixo"
@@ -17,6 +20,7 @@ Um aplicativo React Native de previsão do tempo que permite buscar cidades e sa
   - Probabilidade de chuva
   - Previsão horária (próximas 24 horas)
   - Previsão diária (próximos 7 dias)
+  - Ícones contextuais (dia/noite)
 - **Interface Intuitiva**: Design moderno e fácil de usar
 - **Configurações**: Gerencie favoritos e cache de dados
 
@@ -26,7 +30,7 @@ Um aplicativo React Native de previsão do tempo que permite buscar cidades e sa
 - **TypeScript** para tipagem estática
 - **AsyncStorage** para armazenamento local
 - **APIs Públicas**:
-  - [OpenStreetMap Nominatim](https://nominatim.openstreetmap.org/) - Busca de cidades
+  - [OpenStreetMap Nominatim](https://nominatim.openstreetmap.org/) - Busca de localidades
   - [Open-Meteo](https://api.open-meteo.com/) - Dados meteorológicos
 
 ## 🚀 Como Executar
