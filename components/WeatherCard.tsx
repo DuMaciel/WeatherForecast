@@ -159,7 +159,7 @@ const styles = StyleSheet.create({
   updateRow: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
+    justifyContent: "flex-start",
   },
   inlineRefreshButton: {
     padding: 2,

@@ -1,4 +1,5 @@
-import React from 'react';
+import React from "react";
+import { useState } from "react";
 import {
   View,
   Text,
@@ -7,10 +8,10 @@ import {
   TouchableOpacity,
   FlatList,
   Alert,
-} from 'react-native';
-import { WeatherData, FavoriteLocation } from '../types/weather';
-import { WeatherService } from '../services/WeatherService';
-import { FavoritesService } from '../services/FavoritesService';
+} from "react-native";
+import { FavoriteLocation } from "../types/weather";
+import { WeatherService } from "../services/WeatherService";
+import { FavoritesService } from "../services/FavoritesService";
 
 interface WeatherDetailProps {
   city: FavoriteLocation;
@@ -23,6 +24,10 @@ export const WeatherDetail: React.FC<WeatherDetailProps> = ({
   onBack,
   onRefresh,
 }) => {
+  const [lastRefreshTime, setLastRefreshTime] = useState<string | undefined>(
+    city.lastUpdated
+  );
+
   const weatherData = city.weatherData;
 
   if (!weatherData) {
@@ -32,7 +37,9 @@ export const WeatherDetail: React.FC<WeatherDetailProps> = ({
           <TouchableOpacity onPress={onBack} style={styles.backButton}>
             <Text style={styles.backButtonText}>← Voltar</Text>
           </TouchableOpacity>
-          <Text style={styles.cityName}>{WeatherService.getLocationDisplayName(city)}</Text>
+          <Text style={styles.cityName}>
+            {WeatherService.getLocationDisplayName(city)}
+          </Text>
         </View>
         <View style={styles.loadingContainer}>
           <Text style={styles.loadingText}>
@@ -60,52 +67,30 @@ export const WeatherDetail: React.FC<WeatherDetailProps> = ({
     });
   };
 
-  const renderHourlyItem = ({
-    item,
-    index,
-  }: {
-    item: string;
-    index: number;
-  }) => (
+  const renderHourlyItem = ({ item, index }: { item: any; index: number }) => (
     <View style={styles.hourlyItem}>
-      <Text style={styles.hourlyTime}>{formatTime(item)}</Text>
+      <Text style={styles.hourlyTime}>{formatTime(item.time)}</Text>
       <Text style={styles.hourlyIcon}>
-        {WeatherService.getWeatherIcon(
-          weatherData.hourly.weather_code[index],
-          weatherData.hourly.time[index]
-        )}
+        {WeatherService.getWeatherIcon(item.weatherCode, item.time)}
       </Text>
-      <Text style={styles.hourlyTemp}>
-        {Math.round(weatherData.hourly.temperature_2m[index])}°
-      </Text>
-      <Text style={styles.hourlyRain}>
-        {weatherData.hourly.precipitation_probability[index]}%
-      </Text>
+      <Text style={styles.hourlyTemp}>{Math.round(item.temperature)}°</Text>
+      <Text style={styles.hourlyRain}>{item.precipitation}%</Text>
     </View>
   );
 
-  const renderDailyItem = ({
-    item,
-    index,
-  }: {
-    item: string;
-    index: number;
-  }) => (
+  const renderDailyItem = ({ item, index }: { item: any; index: number }) => (
     <View style={styles.dailyItem}>
-      <Text style={styles.dailyDate}>{formatDate(item)}</Text>
+      <Text style={styles.dailyDate}>{formatDate(item.time)}</Text>
       <Text style={styles.dailyIcon}>
         {WeatherService.getWeatherIcon(
-          weatherData.daily.weather_code[index],
-          weatherData.daily.time[index] + 'T12:00:00' // Meio-dia para o dia
+          item.weatherCode,
+          item.time + "T12:00:00" // Meio-dia para o dia
         )}
       </Text>
       <Text style={styles.dailyTemp}>
-        {Math.round(weatherData.daily.temperature_2m_min[index])}° -{" "}
-        {Math.round(weatherData.daily.temperature_2m_max[index])}°
+        {Math.round(item.tempMin)}° - {Math.round(item.tempMax)}°
       </Text>
-      <Text style={styles.dailyRain}>
-        {weatherData.daily.precipitation_probability_max[index]}%
-      </Text>
+      <Text style={styles.dailyRain}>{item.precipitation}%</Text>
     </View>
   );
 
@@ -120,26 +105,92 @@ export const WeatherDetail: React.FC<WeatherDetailProps> = ({
     weatherData.current.weather_code
   );
 
-  const lastUpdatedText = FavoritesService.getLastUpdatedText(city.lastUpdated);
-  const canRefresh = city.lastUpdated ? 
-    (new Date().getTime() - new Date(city.lastUpdated).getTime()) / (1000 * 60) >= 5 : 
-    true;
+  const lastUpdatedText = FavoritesService.getLastUpdatedText(lastRefreshTime);
+  const canRefresh = lastRefreshTime
+    ? (new Date().getTime() - new Date(lastRefreshTime).getTime()) /
+        (1000 * 60) >=
+      5
+    : true;
 
   const handleRefresh = async () => {
     if (onRefresh) {
       try {
         await onRefresh(city);
-        Alert.alert('Sucesso', 'Dados atualizados com sucesso!');
+        setLastRefreshTime(new Date().toISOString()); // Atualiza o timestamp local
+        Alert.alert("Sucesso", "Dados atualizados com sucesso!");
       } catch (error) {
-        Alert.alert('Erro', 'Não foi possível atualizar os dados meteorológicos.');
+        Alert.alert(
+          "Erro",
+          "Não foi possível atualizar os dados meteorológicos."
+        );
       }
     }
   };
 
-  // Próximas 24 horas
-  const next24Hours = weatherData.hourly.time.slice(0, 24);
-  // Próximos 7 dias
-  const next7Days = weatherData.daily.time.slice(0, 7);
+  // Próximas 24 horas (a partir da hora atual)
+  const now = new Date();
+  const currentHour = now.getHours();
+
+  // Filtra as próximas 24 horas a partir da hora atual
+  const next24Hours = weatherData.hourly.time
+    .map((time, index) => {
+      const hourTime = new Date(time);
+      return {
+        time,
+        temperature: weatherData.hourly.temperature_2m[index],
+        humidity: weatherData.hourly.relative_humidity_2m[index],
+        precipitation: weatherData.hourly.precipitation_probability[index],
+        weatherCode: weatherData.hourly.weather_code[index],
+        hour: hourTime.getHours(),
+        date: hourTime.getDate(),
+      };
+    })
+    .filter((item) => {
+      const itemTime = new Date(item.time);
+      const isToday =
+        itemTime.getDate() === now.getDate() &&
+        itemTime.getMonth() === now.getMonth() &&
+        itemTime.getFullYear() === now.getFullYear();
+
+      // Se é hoje, mostra apenas horas >= hora atual
+      if (isToday) {
+        return item.hour >= currentHour;
+      }
+
+      // Se é amanhã, mostra todas as horas até completar 24
+      const isTomorrow =
+        itemTime.getDate() === now.getDate() + 1 ||
+        (now.getDate() ===
+          new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate() &&
+          itemTime.getDate() === 1);
+
+      return isTomorrow;
+    })
+    .slice(0, 24);
+
+  // Próximos 7 dias (a partir de hoje)
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const next7Days = weatherData.daily.time
+    .map((time, index) => {
+      const dayTime = new Date(time);
+      return {
+        time,
+        tempMax: weatherData.daily.temperature_2m_max[index],
+        tempMin: weatherData.daily.temperature_2m_min[index],
+        precipitation: weatherData.daily.precipitation_probability_max[index],
+        weatherCode: weatherData.daily.weather_code[index],
+        date: dayTime,
+      };
+    })
+    .filter((item) => {
+      // Mostra apenas dias >= hoje
+      const itemDate = new Date(item.time);
+      itemDate.setHours(0, 0, 0, 0);
+      return itemDate >= today;
+    })
+    .slice(0, 7);
 
   return (
     <View style={styles.container}>
@@ -148,9 +199,13 @@ export const WeatherDetail: React.FC<WeatherDetailProps> = ({
           <Text style={styles.backButtonText}>← Voltar</Text>
         </TouchableOpacity>
         <View style={styles.headerInfo}>
-          <Text style={styles.cityName}>{WeatherService.getLocationDisplayName(city)}</Text>
+          <Text style={styles.cityName}>
+            {WeatherService.getLocationDisplayName(city)}
+          </Text>
           <View style={styles.updateRow}>
-            <Text style={styles.lastUpdatedHeader}>Atualizado: {lastUpdatedText}</Text>
+            <Text style={styles.lastUpdatedHeader}>
+              Atualizado: {lastUpdatedText}
+            </Text>
             {onRefresh && canRefresh && (
               <TouchableOpacity
                 onPress={handleRefresh}
@@ -231,8 +286,7 @@ const styles = StyleSheet.create({
   updateRow: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    marginTop: 2,
+    justifyContent: "flex-start",
   },
   lastUpdatedHeader: {
     fontSize: 11,
@@ -255,10 +309,9 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   cityName: {
-    fontSize: 20,
+    fontSize: 16,
     fontWeight: "bold",
     color: "#ffffff",
-    flex: 1,
   },
   content: {
     flex: 1,
